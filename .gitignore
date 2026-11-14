@@ -1,0 +1,42 @@
+# Архивы
+*.zip
+*.zipx
+*.rar
+*.7z
+*.tar
+*.gz
+*.tgz
+*.bz2
+*.tbz
+*.tbz2
+*.xz
+*.txz
+*.lz
+*.lzma
+*.zst
+*.cab
+*.arj
+*.lzh
+*.ace
+*.iso
+*.img
+*.dmg
+*.jar
+*.war
+
+# Окружение и кэш Python
+.venv/
+__pycache__/
+*.pyc
+
+# Генерируемые файлы
+результаты/
+планирование/
+резервные_копии/
+модели/*.joblib
+
+# Временные файлы Excel/Office
+~$*
+
+# Служебные метки Windows («файл скачан из интернета»), появляются при копировании в WSL
+*:Zone.Identifier

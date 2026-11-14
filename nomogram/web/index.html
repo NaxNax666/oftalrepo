@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Номограмма LASIK — EX500 + Moria M2</title>
+<style>
+  :root { --c:#0b5cad; --bg:#f4f6f9; --line:#d9dee6; --warn:#b3261e; --ok:#1b7f3b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 "Segoe UI", Roboto, Arial, sans-serif; background:var(--bg); color:#1d232b; }
+  header { background:var(--c); color:#fff; padding:12px 24px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; }
+  header h1 { font-size:19px; margin:0; font-weight:600; }
+  header .model { font-size:13px; opacity:.9; margin-left:auto; }
+  nav { display:flex; gap:4px; padding:0 24px; background:#fff; border-bottom:1px solid var(--line); }
+  nav button { border:0; background:none; padding:12px 16px; font-size:15px; cursor:pointer; color:#444; border-bottom:3px solid transparent; }
+  nav button.active { color:var(--c); border-bottom-color:var(--c); font-weight:600; }
+  main { max-width:1150px; margin:20px auto; padding:0 16px; }
+  section { display:none; } section.active { display:block; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px 20px; margin-bottom:16px; }
+  .card h2 { font-size:17px; margin:0 0 12px; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; }
+  label { display:flex; flex-direction:column; font-size:13px; color:#555; gap:3px; }
+  input, select { font-size:15px; padding:6px 8px; border:1px solid #b9c1cc; border-radius:5px; width:110px; background:#fff; }
+  select { width:auto; min-width:110px; }
+  input.wide { width:190px; }
+  input:focus, select:focus { outline:2px solid #8bb7e8; border-color:var(--c); }
+  table { border-collapse:collapse; }
+  table.eyes td, table.eyes th { padding:4px 8px; }
+  table.eyes th { text-align:left; font-weight:600; font-size:14px; }
+  table.eyes td:first-child { color:#555; font-size:14px; }
+  table.eyes input { width:100px; }
+  table.grid { width:100%; font-size:14px; }
+  table.grid th, table.grid td { border:1px solid var(--line); padding:5px 8px; text-align:center; }
+  table.grid th { background:#eef2f7; }
+  table.grid td.l { text-align:left; }
+  button.btn { background:var(--c); color:#fff; border:0; border-radius:6px; padding:9px 18px; font-size:15px; cursor:pointer; }
+  button.btn.sec { background:#fff; color:var(--c); border:1px solid var(--c); }
+  button.btn:disabled { opacity:.5; cursor:wait; }
+  .results { display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr)); gap:16px; }
+  .res h3 { margin:0 0 8px; font-size:18px; }
+  .entry { font-size:26px; font-weight:700; color:var(--c); margin:4px 0 2px; letter-spacing:.3px; }
+  .muted { color:#666; font-size:13px; }
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:3px 14px; margin:10px 0; font-size:14px; }
+  .kv div:nth-child(odd) { color:#555; }
+  .warn { background:#fdecea; color:var(--warn); border-radius:6px; padding:8px 12px; margin-top:8px; font-size:14px; }
+  .good { background:#e7f5ec; color:var(--ok); border-radius:6px; padding:8px 12px; margin-top:8px; font-size:14px; }
+  .err { color:var(--warn); font-weight:600; margin-top:8px; white-space:pre-wrap; }
+  .hint { font-size:13px; color:#666; margin-top:6px; }
+  .info { background:#fff4e0; color:#7a4a00; border-radius:6px; padding:8px 12px; margin-top:10px; font-size:14px; }
+  tr.ie-row td:first-child { color:#0b5cad; }
+  .scroll { overflow:auto; max-height:420px; }
+  a { color:var(--c); }
+  @media print {
+    header .model, nav, .noprint, #tab-calc > .card:first-child { display:none !important; }
+    body { background:#fff; } .card { border:0; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Номограмма LASIK · Alcon EX500 + Moria M2</h1>
+  <div class="model" id="modelInfo">загрузка…</div>
+</header>
+<nav>
+  <button data-tab="calc" class="active">Расчёт пациента</button>
+  <button data-tab="base">База пациентов и осмотры</button>
+  <button data-tab="batch">Список пациентов (Excel)</button>
+  <button data-tab="table">Таблица номограммы</button>
+  <button data-tab="data">Данные и обучение</button>
+</nav>
+<main>
+
+<!-- ============ РАСЧЁТ ============ -->
+<section id="tab-calc" class="active">
+  <div class="card">
+    <h2>Пациент</h2>
+    <div class="row">
+      <label>№ карты / ФИО (для базы)<input id="p_id" class="wide"></label>
+      <label>Возраст, лет<input id="p_age" inputmode="decimal"></label>
+      <label>Протокол<select id="p_protocol"></select></label>
+      <label>Оптическая зона, мм<input id="p_oz" inputmode="decimal"></label>
+      <label>Цель (сф. экв.), D<input id="p_target" inputmode="decimal"></label>
+      <label>Цель на срок<select id="p_horizon">
+        <option value="1">1 мес</option><option value="3">3 мес</option>
+        <option value="6">6 мес</option><option value="12">12 мес</option></select></label>
+    </div>
+    <div id="idInfo" class="noprint"></div>
+    <div class="hint"><b>Цель — это указание программе:</b> ввод в лазер подбирается так, чтобы прогнозный
+      сфероэквивалент на выбранный срок был равен цели (например, +0.25 D через 3 мес).
+      Цель и срок сохраняются в базе вместе с пациентом.</div>
+    <h2 style="margin-top:18px">Данные до операции</h2>
+    <table class="eyes">
+      <tr><th></th><th>OD</th><th>OS</th></tr>
+      <tbody id="eyeRows"></tbody>
+    </table>
+    <div class="hint">Субъективная рефракция — как при подборе очков; острота с коррекцией — десятичная (0.1–1.5).
+      Кератометрия и биометрия — с Nidek AL-Scan. <b>Кератометрия (K1, K2 и их оси) участвует в подборе
+      цилиндра и оси</b> — заполняйте её полностью.
+      <span id="ieHint" style="display:none"><br><b>Протокол WLP (WaveLight Plus):</b> дополнительно внесите рефракцию,
+      измеренную InnovEyes. Расчёт ведётся от субъективной рефракции (если её нет — от InnovEyes);
+      расхождение приборной и субъективной рефракции показывается в результате.</span><br>
+      Лоскут — ожидаемая толщина для головки Moria M2 (если пусто — <span id="defFlap"></span> мкм).
+      Глаз без рефракции не рассчитывается. Десятичный разделитель — точка или запятая.<br>
+      <b>Если указан № карты, пациент автоматически сохраняется в базу</b> со статусом «запланирован»;
+      после операции подтвердите фактический ввод и лоскут на вкладке «База пациентов и осмотры».</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="btnCalc">Рассчитать</button>
+      <button class="btn sec" id="btnClear">Очистить</button>
+      <button class="btn sec" id="btnPrint" style="display:none">Печать</button>
+    </div>
+    <div class="err" id="calcErr"></div>
+  </div>
+  <div id="calcOut"></div>
+</section>
+
+<!-- ============ БАЗА ============ -->
+<section id="tab-base">
+  <div class="card" id="baseListCard">
+    <h2>База пациентов</h2>
+    <div class="row">
+      <label>Поиск по № карты / ФИО<input id="b_search" class="wide"></label>
+      <label>Показать<select id="b_filter" style="width:260px">
+        <option value="all">всех</option>
+        <option value="due">ожидают контрольного осмотра</option>
+        <option value="planned">запланированы (подтвердить операцию)</option>
+      </select></label>
+      <button class="btn sec" id="btnBaseReload">Обновить</button>
+    </div>
+    <div class="hint" id="baseInfo"></div>
+    <div class="err" id="baseErr"></div>
+    <div class="scroll" id="baseList" style="margin-top:10px; max-height:360px"></div>
+  </div>
+  <div id="patientCard"></div>
+</section>
+
+<!-- ============ СПИСОК ============ -->
+<section id="tab-batch">
+  <div class="card">
+    <h2>Расчёт для списка пациентов</h2>
+    <p>1. Скачайте шаблон, заполните по строке на каждый глаз (строку-пример можно удалить).<br>
+       2. Загрузите заполненный файл — получите Excel с рекомендациями для каждого глаза.</p>
+    <div class="row">
+      <button class="btn sec" id="btnTemplate">Скачать шаблон</button>
+      <label>Заполненный файл<input type="file" id="batchFile" accept=".xlsx" style="width:auto"></label>
+      <button class="btn" id="btnBatch">Рассчитать и скачать</button>
+    </div>
+    <div class="err" id="batchErr"></div>
+  </div>
+</section>
+
+<!-- ============ ТАБЛИЦА ============ -->
+<section id="tab-table">
+  <div class="card">
+    <h2>Сводная таблица номограммы</h2>
+    <div class="row">
+      <label>Протокол<select id="t_protocol"></select></label>
+      <button class="btn sec" id="btnTableXlsx">Скачать в Excel</button>
+    </div>
+    <div class="hint">Ввод в лазер для «типичного» глаза (средняя биометрия по вашим данным), цель — сф. экв.
+      <span id="tTarget">0</span> D (значение по умолчанию из настроек). Роговичный астигматизм в таблице
+      принят равным рефракционному и на той же оси.
+      Для конкретного пациента точнее вкладка «Расчёт пациента»: там учитывается его кератометрия, пахиметрия, лоскут и т.д.</div>
+    <div class="err" id="tableErr"></div>
+  </div>
+  <div class="card"><h2>Сфера (цилиндр 0): субъективная → ввод, по возрасту</h2><div id="tSph" class="scroll"></div></div>
+  <div class="card"><h2>Цилиндр (30 лет): субъективный → ввод «сфера цилиндр»</h2><div id="tCyl" class="scroll"></div></div>
+</section>
+
+<!-- ============ ДАННЫЕ ============ -->
+<section id="tab-data">
+  <div class="card">
+    <h2>Текущая модель</h2>
+    <div id="modelSummary" class="muted">—</div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn sec" id="btnReport">Скачать отчёт обучения</button>
+      <button class="btn sec" id="btnHistory">Скачать историю версий</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Добавить результаты операций</h2>
+    <p>Два способа: <b>(а)</b> дописать новых пациентов и контрольные визиты прямо в файл
+      <b>номограмма.xlsx</b> (в папке программы), сохранить и закрыть Excel; <b>(б)</b> загрузить сюда отдельный
+      файл Excel с такой же шапкой, как у номограмма.xlsx. Затем нажмите «Проверить данные» и «Переобучить».</p>
+    <div class="row">
+      <label>Файл с новыми данными<input type="file" id="dataFile" accept=".xlsx" style="width:auto"></label>
+      <button class="btn sec" id="btnUpload">Загрузить</button>
+    </div>
+    <div id="fileList" class="hint"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn sec" id="btnCheck">Проверить данные</button>
+      <button class="btn" id="btnTrain">Переобучить модель</button>
+    </div>
+    <div class="err" id="dataErr"></div>
+    <div id="dataOut"></div>
+  </div>
+  <div class="card"><h2>История версий модели</h2><div id="history" class="scroll muted">—</div></div>
+</section>
+</main>
+
+<script>
+const IE_ROWS = [["ie_sph","InnovEyes: сфера, D"],["ie_cyl","InnovEyes: цилиндр, D"],["ie_axis","InnovEyes: ось, °"]];
+const IE_KEYS = IE_ROWS.map(([k]) => k);
+const EYE_FIELDS = [
+  ["pre_sph","Сфера, D"],["pre_cyl","Цилиндр, D"],["pre_axis","Ось цилиндра, °"], ...IE_ROWS,
+  ["pre_cdva","Острота с коррекцией"],["k1","K1, D"],["k1_axis","Ось K1, °"],["k2","K2, D"],["k2_axis","Ось K2, °"],
+  ["al","AL, мм"],["acd","ACD, мм"],["pachy","Пахиметрия, мкм"],["pupil","Зрачок, мм"],["flap","Лоскут, мкм"]];
+let STATUS = null;
+const $ = id => document.getElementById(id);
+const fmt = (v, d=2, sign=true) => v === null || v === undefined || v === "" ? "—"
+  : (sign && v > 0 ? "+" : "") + Number(v).toFixed(d);
+
+async function api(path, opts={}) {
+  const r = await fetch(path, opts);
+  const ct = r.headers.get("content-type") || "";
+  if (!r.ok) {
+    const msg = ct.includes("json") ? (await r.json()).error : await r.text();
+    throw new Error(msg || "Ошибка сервера");
+  }
+  return ct.includes("json") ? r.json() : r.blob();
+}
+function download(blob, name) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+async function busy(btn, fn, errBox) {
+  btn.disabled = true; if (errBox) errBox.textContent = "";
+  try { await fn(); } catch (e) { if (errBox) errBox.textContent = e.message; else alert(e.message); }
+  finally { btn.disabled = false; }
+}
+function tableHTML(rows, cols) {
+  if (!rows || !rows.length) return "<p class='muted'>нет данных</p>";
+  cols = cols || Object.keys(rows[0]);
+  let h = "<table class='grid'><tr>" + cols.map(c => `<th>${c}</th>`).join("") + "</tr>";
+  for (const r of rows) h += "<tr>" + cols.map(c => {
+    let v = r[c]; if (v === null || v === undefined) v = "";
+    if (typeof v === "number" && !Number.isInteger(v)) v = Math.round(v * 1000) / 1000;
+    return `<td class="${typeof v === 'string' && v.length > 25 ? 'l' : ''}">${v}</td>`;
+  }).join("") + "</tr>";
+  return h + "</table>";
+}
+
+// ---------- вкладки ----------
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("active", s.id === "tab-" + b.dataset.tab));
+  if (b.dataset.tab === "table") loadTables();
+  if (b.dataset.tab === "base" && !BASE) loadBase();
+});
+
+// ---------- статус ----------
+async function loadStatus() {
+  STATUS = await api("/api/status");
+  const s = STATUS;
+  $("defFlap").textContent = s.planning.default_flap;
+  $("tTarget").textContent = fmt(s.planning.target_M);
+  fillProtocols($("p_protocol"), s.all_protocols || []);
+  toggleIE();
+  if (!$("p_target").value) $("p_target").value = s.planning.target_M;
+  $("p_horizon").value = String(s.planning.horizon_months);
+  $("fileList").innerHTML = "Используемые файлы: <b>" + (s.files.join(", ") || "нет") + "</b>" +
+    (s.uploaded.length ? "<br>Загруженные: " + s.uploaded.map(f =>
+      `${f} <a href="#" onclick="delFile('${f.replace(/'/g, "\\'")}');return false">удалить</a>`).join(", ") : "");
+  if (!s.trained) {
+    $("modelInfo").textContent = "Модель не обучена";
+    $("modelSummary").innerHTML = "<span class='err'>Модель ещё не обучена — нажмите «Переобучить модель».</span>";
+    return;
+  }
+  $("modelInfo").textContent = `Модель от ${s.trained_at} · ${s.n_eyes} глаз · ` +
+    `${Math.round(s.uncertainty.level * 100)}% глаз в пределах ±${s.uncertainty.M.toFixed(2)} D`;
+  fillProtocols($("t_protocol"), s.protocols);
+  if (!$("p_oz").value) $("p_oz").value = s.typical.oz;
+  $("modelSummary").innerHTML = tableHTML(s.summary.map(x => ({"показатель": x.k, "значение": x.v})));
+  $("history").innerHTML = tableHTML(s.history);
+}
+function fillProtocols(sel, list) {
+  const cur = sel.value;
+  sel.innerHTML = list.map(p => `<option>${p}</option>`).join("");
+  if (cur && list.includes(cur)) sel.value = cur;
+}
+async function delFile(name) {
+  if (!confirm(`Удалить загруженный файл ${name}? Данные из него перестанут использоваться при обучении.`)) return;
+  await api("/api/delete-data?name=" + encodeURIComponent(name), {method: "POST"});
+  loadStatus();
+}
+
+// ---------- расчёт ----------
+$("eyeRows").innerHTML = EYE_FIELDS.map(([k, t]) =>
+  `<tr class="${IE_KEYS.includes(k) ? "ie-row" : ""}"><td>${t}</td><td><input id="OD_${k}" inputmode="decimal"></td><td><input id="OS_${k}" inputmode="decimal"></td></tr>`).join("");
+
+// Поля InnovEyes видны только для протокола WLP (WaveLight Plus)
+function toggleIE() {
+  const on = $("p_protocol").value === "WLP";
+  document.querySelectorAll("#eyeRows tr.ie-row").forEach(tr => tr.style.display = on ? "" : "none");
+  $("ieHint").style.display = on ? "" : "none";
+}
+$("p_protocol").onchange = toggleIE;
+
+// Проверка: есть ли уже пациент с таким № карты в базе (сразу после заполнения поля)
+let idTimer = null, idSeq = 0;
+async function checkId() {
+  const id = $("p_id").value.trim(), box = $("idInfo"), seq = ++idSeq;
+  if (!id) { box.innerHTML = ""; return; }
+  try {
+    const r = await api("/api/patient-exists?id=" + encodeURIComponent(id));
+    if (seq !== idSeq) return;
+    if (!r.exists) {
+      box.innerHTML = `<div class="good">Пациента «${esc(id)}» в базе ещё нет — при расчёте он будет добавлен как новый.</div>`;
+      return;
+    }
+    const eyes = r.eyes.map(e => `<b>${esc(e.eye)}</b> — ${esc(e.status)}` +
+      (e.surgery_date ? `, операция ${esc(e.surgery_date)}` : e.calc_date ? `, расчёт ${esc(e.calc_date)}` : "") +
+      (e.protocol ? `, ${esc(e.protocol)}` : "")).join("; ");
+    const operated = r.eyes.some(e => e.status === "оперирован");
+    const planned = r.eyes.some(e => e.status === "запланирован");
+    const jsId = esc(JSON.stringify(r.id));
+    box.innerHTML = `<div class="info">⚠ <b>Пациент «${esc(r.id)}» уже есть в базе</b>` +
+      (r.age != null ? ` (возраст ${esc(r.age)})` : "") + `: ${eyes}.<br>` +
+      (operated ? "Данные прооперированных глаз при новом расчёте <b>не перезаписываются</b>. " : "") +
+      (planned ? "Данные запланированных глаз будут <b>обновлены</b> новым расчётом. " : "") +
+      `<a href="#" onclick='openPatient(${jsId});return false'>Открыть карточку</a> ·
+       <a href="#" onclick='fillFromBase(${jsId});return false'>подставить данные из базы в форму</a></div>`;
+  } catch (e) { if (seq === idSeq) box.innerHTML = `<div class="err">Не удалось проверить базу: ${esc(e.message)}</div>`; }
+}
+$("p_id").addEventListener("input", () => { clearTimeout(idTimer); idTimer = setTimeout(checkId, 500); });
+$("p_id").addEventListener("change", () => { clearTimeout(idTimer); checkId(); });
+
+async function fillFromBase(id) {
+  try {
+    const P = await api("/api/patient?id=" + encodeURIComponent(id));
+    const first = Object.values(P.eyes)[0] || {};
+    const set = (el, v) => { if (v !== null && v !== undefined && v !== "") el.value = v; };
+    $("p_id").value = P.id;
+    set($("p_age"), first.age); set($("p_oz"), first.oz); set($("p_target"), first.target_M);
+    if (first.target_months != null && [...$("p_horizon").options].some(o => o.value === String(first.target_months)))
+      $("p_horizon").value = String(first.target_months);
+    if (first.protocol && [...$("p_protocol").options].some(o => o.value === first.protocol)) $("p_protocol").value = first.protocol;
+    for (const e of ["OD", "OS"]) for (const [k] of EYE_FIELDS)
+      $(`${e}_${k}`).value = P.eyes[e] && P.eyes[e][k] != null ? P.eyes[e][k] : "";
+    toggleIE();
+  } catch (e) { $("calcErr").textContent = e.message; }
+}
+
+function renderResult(r) {
+  const unc = Object.keys(r).find(k => k.includes("глаз в пределах"));
+  const traj = ["1 сут","1 мес","3 мес","6 мес","12 мес"].map(t => ({"срок": t, "сф. экв., D": fmt(r["M " + t])}));
+  const entry = `${fmt(r["ВВОД sph"])} ${fmt(r["ВВОД cyl"])}` + (r["ВВОД cyl"] ? ` × ${r["ВВОД axis"]}°` : "");
+  const warn = r["предупреждения"] ? r["предупреждения"].split("; ").map(w => `<div>⚠ ${w}</div>`).join("") : "";
+  const cornea = r["роговичный астигматизм, D"] == null ? "нет данных кератометрии"
+    : `${fmt(r["роговичный астигматизм, D"], 2, false)} D` +
+      (r["плоская ось роговицы"] != null ? `, плоская ось ${r["плоская ось роговицы"]}°` : "") +
+      (r["ORA, D"] != null ? ` · расхождение с рефракционным (ORA) ${fmt(r["ORA, D"], 2, false)} D` : "");
+  return `<div class="card res">
+    <h3>${r["глаз"]} ${r.id ? "· " + r.id : ""}</h3>
+    <div class="muted">Субъективная рефракция: ${r["субъективно"]}</div>
+    ${r["InnovEyes"] ? `<div class="muted">InnovEyes: ${r["InnovEyes"]}` +
+      (r["InnovEyes − субъективная"] ? ` (отличие от субъективной: ${r["InnovEyes − субъективная"]} D)` : "") + `</div>` : ""}
+    <div class="muted">Роговичный астигматизм: ${cornea}</div>
+    <div class="muted" style="margin-top:8px">ВВЕСТИ В ЛАЗЕР</div>
+    <div class="entry">${entry}</div>
+    <div class="muted">поправка к субъективной: сфера ${fmt(r["поправка sph"])}, цилиндр ${fmt(r["поправка cyl"])}` +
+      (r["поправка оси"] ? `, ось ${r["поправка оси"] > 0 ? "+" : ""}${r["поправка оси"]}° (к оси роговицы)` : "") + `</div>
+    <div class="kv">
+      <div>Цель</div><div><b>${fmt(r["цель M"])} D</b> (сф. экв.) через ${r["срок, мес"]} мес</div>
+      <div>Прогноз через ${r["срок, мес"]} мес</div><div><b>${fmt(r["прогноз M"])} D</b> (сф. экв.;
+        отклонение от цели ${fmt(r["отклонение прогноза от цели"])} D), рефракция ${r["прогноз рефракции"]}</div>
+      <div>Остаточный цилиндр</div><div>${fmt(r["прогноз остаточного цилиндра"], 2, false)} D
+        (при вводе субъективной: ${fmt(r["прогноз остаточного цилиндра при вводе субъективной"], 2, false)} D)</div>
+      <div>Острота без коррекции</div><div><b>${r["прогноз UCVA"] ?? "—"}</b>
+        (с коррекцией до операции: ${r["острота с коррекцией до операции"] ?? "не указана"})</div>
+      <div>Точность</div><div>${unc ? unc.replace(" D", "") + " " + fmt(r[unc], 2, false) + " D" : "—"}</div>
+      <div>Если ввести субъективную</div><div>${fmt(r["прогноз M при вводе субъективной"])} D,
+        острота ${r["прогноз UCVA при вводе субъективной"] ?? "—"}</div>
+      <div>Критерий подбора</div><div>${r["критерий подбора"]}</div>
+      <div>Абляция (ориентир.)</div><div>≈ ${r["абляция ≈ мкм (Мюнерлин)"]} мкм (по Мюнерлину; точное значение — на лазере)</div>
+      <div>Остаточное ложе (RSB)</div><div>${r["RSB ≈ мкм"] ?? "—"} мкм</div>
+      <div>PTA</div><div>${r["PTA ≈"] != null ? Math.round(r["PTA ≈"] * 100) + " %" : "—"}</div>
+    </div>
+    ${tableHTML(traj)}
+    ${warn ? `<div class="warn">${warn}</div>` : `<div class="good">Замечаний нет</div>`}
+  </div>`;
+}
+
+async function calc() {
+  const eyes = {};
+  for (const e of ["OD","OS"]) {
+    eyes[e] = {}; for (const [k] of EYE_FIELDS) eyes[e][k] = $(`${e}_${k}`).value;
+  }
+  const req = {id: $("p_id").value, age: $("p_age").value, protocol: $("p_protocol").value,
+    oz: $("p_oz").value, target_M: $("p_target").value, horizon: $("p_horizon").value, eyes};
+  const res = await api("/api/plan", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(req)});
+  const sv = res.saved;
+  const savedHTML = `<div class="${sv.ok ? "good" : "warn"} noprint" style="margin-bottom:12px">${sv.message}
+    ${sv.ok ? ` · <a href="#" onclick="openPatient('${sv.id.replace(/'/g, "\\'")}');return false">открыть карточку в базе</a>` : ""}</div>`;
+  clearTimeout(idTimer); idSeq++; $("idInfo").innerHTML = "";   // итог записи в базу показан над результатом
+  $("calcOut").innerHTML = savedHTML + `<div class="results">${res.results.map(renderResult).join("")}</div>
+    <p class="muted">Модель ${res.version}. Рекомендация — вспомогательная; окончательное решение и проверка
+      параметров абляции на лазере — за хирургом.</p>`;
+  $("btnPrint").style.display = "";
+}
+$("btnCalc").onclick = () => busy($("btnCalc"), calc, $("calcErr"));
+document.querySelectorAll("#tab-calc input").forEach(i =>
+  i.addEventListener("keydown", e => { if (e.key === "Enter") $("btnCalc").click(); }));
+$("btnClear").onclick = () => {
+  document.querySelectorAll("#tab-calc input").forEach(i => i.value = "");
+  $("p_target").value = STATUS ? STATUS.planning.target_M : 0;
+  if (STATUS && STATUS.typical) $("p_oz").value = STATUS.typical.oz;
+  $("calcOut").innerHTML = ""; $("calcErr").textContent = ""; $("btnPrint").style.display = "none";
+  $("idInfo").innerHTML = "";
+};
+$("btnPrint").onclick = () => window.print();
+
+// ---------- список ----------
+$("btnTemplate").onclick = () => busy($("btnTemplate"), async () =>
+  download(await api("/api/template"), "шаблон_планирования.xlsx"), $("batchErr"));
+$("btnBatch").onclick = () => busy($("btnBatch"), async () => {
+  const f = $("batchFile").files[0]; if (!f) throw new Error("Выберите файл");
+  const blob = await api("/api/plan-file?horizon=" + $("p_horizon").value, {method: "POST", body: f});
+  download(blob, "план_" + f.name);
+}, $("batchErr"));
+
+// ---------- таблица ----------
+async function loadTables() {
+  if (!STATUS || !STATUS.trained) return;
+  $("tableErr").textContent = "расчёт…";
+  try {
+    const t = await api("/api/tables?protocol=" + encodeURIComponent($("t_protocol").value));
+    $("tSph").innerHTML = tableHTML(t.sph); $("tCyl").innerHTML = tableHTML(t.cyl);
+    $("tableErr").textContent = "";
+  } catch (e) { $("tableErr").textContent = e.message; }
+}
+$("t_protocol").onchange = loadTables;
+$("btnTableXlsx").onclick = () => busy($("btnTableXlsx"), async () =>
+  download(await api("/api/download?name=" + encodeURIComponent("номограмма_таблица.xlsx")), "номограмма_таблица.xlsx"),
+  $("tableErr"));
+
+// ---------- данные ----------
+function showIssues(res, title) {
+  let h = `<h3 style="margin:16px 0 6px">${title}</h3>`;
+  if (res.summary) h += tableHTML(res.summary.map(x => ({"показатель": x.k, "значение": x.v})));
+  if (res.eyes !== undefined) h += `<p>Глаз: <b>${res.eyes}</b>, исключено: <b>${res.excluded}</b>, замечаний: <b>${res.issues.length}</b></p>`;
+  if (res.issues.length) h += `<h3 style="margin:16px 0 6px">Замечания к данным (исправьте в Excel по номеру строки)</h3>
+    <div class="scroll">${tableHTML(res.issues)}</div>`;
+  else h += `<div class="good">Замечаний к данным нет</div>`;
+  $("dataOut").innerHTML = h;
+}
+$("btnCheck").onclick = () => busy($("btnCheck"), async () =>
+  showIssues(await api("/api/check", {method: "POST"}), "Проверка данных"), $("dataErr"));
+$("btnTrain").onclick = () => busy($("btnTrain"), async () => {
+  $("dataOut").innerHTML = "<p>Идёт обучение, обычно 10–30 секунд…</p>";
+  const res = await api("/api/train", {method: "POST"});
+  showIssues(res, "Модель переобучена");
+  await loadStatus();
+}, $("dataErr"));
+$("btnUpload").onclick = () => busy($("btnUpload"), async () => {
+  const f = $("dataFile").files[0]; if (!f) throw new Error("Выберите файл");
+  const res = await api("/api/upload-data?name=" + encodeURIComponent(f.name), {method: "POST", body: f});
+  showIssues(res, `Файл «${res.saved}» загружен. Проверка всех данных:`);
+  await loadStatus();
+}, $("dataErr"));
+$("btnReport").onclick = () => busy($("btnReport"), async () => {
+  const name = `отчёт_обучения_${STATUS.version}.xlsx`;
+  download(await api("/api/download?name=" + encodeURIComponent(name)), name);
+}, $("dataErr"));
+$("btnHistory").onclick = () => busy($("btnHistory"), async () =>
+  download(await api("/api/download?name=история"), "история_обучения.csv"), $("dataErr"));
+
+// ---------- база пациентов ----------
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
+  ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const PRE_ROWS = [["age", "Возраст, лет"], ...EYE_FIELDS.filter(([k]) => k !== "flap")];
+const OP_ROWS = [["target_M", "Цель (сф. экв.), D"], ["target_months", "Цель на срок, мес"],
+  ["surgery_date", "Дата операции (ДД.ММ.ГГГГ)"], ["plan_sph", "Введено в лазер: сфера"],
+  ["plan_cyl", "Введено: цилиндр"], ["plan_axis", "Введено: ось"], ["protocol", "Протокол (Custom-Q / WFO / WLP)"],
+  ["oz", "Оптическая зона, мм"], ["flap", "Лоскут ФАКТ (в операционной), мкм"]];
+const VF = [["sph", "sph"], ["cyl", "cyl"], ["axis", "ось"], ["ucva", "UCVA"]];
+let BASE = null, CURRENT = null;
+
+function switchTab(name) { document.querySelector(`nav button[data-tab="${name}"]`).click(); }
+
+async function loadBase() {
+  $("baseErr").textContent = "";
+  try { BASE = await api("/api/patients"); renderBaseList(); }
+  catch (e) { $("baseErr").textContent = e.message; }
+}
+function renderBaseList() {
+  if (!BASE) return;
+  const q = $("b_search").value.trim().toLowerCase(), f = $("b_filter").value;
+  let rows = BASE.patients.filter(p => !q || p.id.toLowerCase().includes(q));
+  if (f === "due") rows = rows.filter(p => p.due.length);
+  if (f === "planned") rows = rows.filter(p => p.status === "запланирован");
+  const nDue = BASE.patients.filter(p => p.due.length).length;
+  const nPl = BASE.patients.filter(p => p.status === "запланирован").length;
+  $("baseInfo").innerHTML = `Файл базы: <b>${esc(BASE.file)}</b> · пациентов: ${BASE.patients.length} ·
+    запланировано: ${nPl} · ожидают контроля: ${nDue}. Щёлкните строку, чтобы открыть карточку.`;
+  let h = `<table class="grid"><tr><th>№ карты / ФИО</th><th>Возраст</th><th>Глаза</th><th>Статус</th>
+    <th>Дата операции</th><th>Внесённые осмотры</th><th>Ожидается осмотр</th></tr>`;
+  for (const p of rows.slice(0, 500)) h += `<tr style="cursor:pointer" data-id="${esc(p.id)}">
+    <td class="l">${esc(p.id)}</td><td>${p.age ?? ""}</td><td>${esc(p.eyes)}</td>
+    <td>${p.status === "запланирован" ? "<b style='color:#b36b00'>запланирован</b>" : "оперирован"}</td>
+    <td>${p.surgery_date ?? ""}</td><td class="l">${esc(p.visits.join(", "))}</td>
+    <td class="l" style="color:var(--warn)">${esc(p.due.join(", "))}</td></tr>`;
+  $("baseList").innerHTML = h + "</table>" + (rows.length ? "" : "<p class='muted'>никого не найдено</p>");
+  $("baseList").querySelectorAll("tr[data-id]").forEach(tr => tr.onclick = () => openPatient(tr.dataset.id));
+}
+$("b_search").oninput = renderBaseList;
+$("b_filter").onchange = renderBaseList;
+$("btnBaseReload").onclick = loadBase;
+
+async function openPatient(id) {
+  switchTab("base");
+  $("baseErr").textContent = "";
+  try {
+    if (!BASE) await loadBase();
+    CURRENT = await api("/api/patient?id=" + encodeURIComponent(id));
+    renderCard();
+    $("patientCard").scrollIntoView({behavior: "smooth"});
+  } catch (e) { $("baseErr").textContent = e.message; }
+}
+
+function renderCard(message, isError) {
+  const P = CURRENT, eyes = Object.keys(P.eyes).sort();
+  const inp = (e, k, w) => `<input id="c_${e}_${k}" value="${esc(P.eyes[e][k])}" style="width:${w || 95}px">`;
+  const rowsHTML = rows => rows.map(([k, t]) => `<tr><td>${t}</td>${eyes.map(e =>
+    `<td>${inp(e, k, ["surgery_date", "protocol"].includes(k) ? 120 : 95)}</td>`).join("")}</tr>`).join("");
+  const head = `<tr><th></th>${eyes.map(e => `<th>${e}</th>`).join("")}</tr>`;
+  const status = eyes.map(e => {
+    const x = P.eyes[e];
+    return `<div><b>${e}</b>: ${x.status}${x.calc_date ? ", расчёт " + esc(x.calc_date) : ""}
+      ${x.recommendation ? " · рекомендация программы: " + esc(x.recommendation) : ""}
+      <span class="muted"> (строка ${x._row} в ${esc(P.file)})</span></div>`;
+  }).join("");
+  const vHead = `<tr><th rowspan="2">Осмотр</th>${eyes.map(e => `<th colspan="4">${e}</th>`).join("")}</tr>
+    <tr>${eyes.map(() => VF.map(([, t]) => `<th>${t}</th>`).join("")).join("")}</tr>`;
+  const vBody = BASE.visits.map((v, i) => `<tr><td class="l">${esc(v)}</td>${eyes.map(e =>
+    VF.map(([f]) => `<td>${inp(e, `v${i}_${f}`, 64)}</td>`).join("")).join("")}</tr>`).join("");
+  $("patientCard").innerHTML = `<div class="card">
+    <div class="row" style="justify-content:space-between; align-items:center">
+      <h2 style="margin:0">Карточка: ${esc(P.id)}</h2>
+      <button class="btn sec" onclick="$('patientCard').innerHTML=''">Закрыть</button></div>
+    <div class="hint" style="margin:8px 0 12px">${status}</div>
+    <div style="display:flex; gap:32px; flex-wrap:wrap">
+      <div><h3>До операции</h3><table class="eyes">${head}${rowsHTML(PRE_ROWS)}</table></div>
+      <div><h3>Операция</h3><table class="eyes">${head}
+        <tr><td><b>Операция проведена</b></td>${eyes.map(e => `<td><input type="checkbox" id="c_${e}_operated"
+          ${P.eyes[e].status === "оперирован" ? "checked" : ""} style="width:auto; transform:scale(1.3)"></td>`).join("")}</tr>
+        ${rowsHTML(OP_ROWS)}</table>
+        <div class="hint" style="max-width:420px">После операции отметьте «Операция проведена» и проверьте, что в полях
+          «Введено» стоит <b>фактический</b> ввод в лазер (по умолчанию — рекомендация программы),
+          а в «Лоскут ФАКТ» — толщина, измеренная в операционной.<br>
+          «Цель» — рефракция, под которую рассчитывалась программа лазера (указание хирурга), и срок, к которому
+          она должна быть достигнута. Строки InnovEyes заполняются для протокола WLP.</div></div>
+    </div>
+    <h3>Контрольные осмотры</h3>
+    <table class="grid" style="width:auto">${vHead}${vBody}</table>
+    <div class="hint">Рефракция — Tonoref II, острота без коррекции (UCVA) — десятичная.
+      «после операции» — ранний осмотр (1-е сутки). Пустые клетки допустимы.</div>
+    <h3>Комментарий / осложнения</h3>
+    ${eyes.map(e => `<label>${e}<input id="c_${e}_comment" value="${esc(P.eyes[e].comment)}" style="width:520px"></label>`).join("")}
+    <div class="hint">Глаз с комментарием (осложнением) не используется при обучении номограммы.</div>
+    <div class="row" style="margin-top:14px"><button class="btn" id="btnSaveCard">Сохранить</button></div>
+    <div class="${isError ? "err" : "good"}" style="${message ? "" : "display:none"}">${esc(message || "")}</div>
+  </div>`;
+  $("btnSaveCard").onclick = () => busy($("btnSaveCard"), saveCard);
+}
+
+async function saveCard() {
+  const eyes = {};
+  for (const e of Object.keys(CURRENT.eyes)) {
+    const v = {};
+    for (const [k] of [...PRE_ROWS, ...OP_ROWS]) v[k] = $(`c_${e}_${k}`).value;
+    BASE.visits.forEach((_, i) => VF.forEach(([f]) => v[`v${i}_${f}`] = $(`c_${e}_v${i}_${f}`).value));
+    v.comment = $(`c_${e}_comment`).value;
+    v.operated = $(`c_${e}_operated`).checked;
+    eyes[e] = v;
+  }
+  try {
+    const res = await api("/api/patient/save", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({id: CURRENT.id, eyes})});
+    CURRENT = res.patient;
+    renderCard("Сохранено. Чтобы новые данные учитывались в номограмме, переобучите модель " +
+      "(вкладка «Данные и обучение»).");
+    loadBase();
+  } catch (e) {
+    const box = document.querySelector("#patientCard .card > div:last-child");
+    box.className = "err"; box.style.display = ""; box.textContent = e.message;
+  }
+}
+
+loadStatus().catch(e => $("modelInfo").textContent = "Ошибка: " + e.message);
+</script>
+</body>
+</html>
